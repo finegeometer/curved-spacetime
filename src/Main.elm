@@ -328,7 +328,7 @@ viewRightSidebar model =
                     ]
                   <|
                     el [ Background.color backgroundColor, Element.width fill ]
-                        (Element.link [ centerX, padding 5 ] { url = "", label = text "[src]" })
+                        (Element.link [ centerX, padding 5 ] { url = "https://github.com/finegeometer/curved-spacetime", label = text "[src]" })
                         :: Element.textColumn
                             [ Background.color backgroundColor
                             , Font.size (scaled -1)
