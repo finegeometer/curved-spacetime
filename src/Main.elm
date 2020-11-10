@@ -644,13 +644,3 @@ borderColor =
 backgroundColor : Element.Color
 backgroundColor =
     rgb 0.1 0.0 0.1
-
-
-
-{-
-
-   Todo:
-
-   Github
-
--}
