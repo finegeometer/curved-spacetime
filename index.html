@@ -1,0 +1,36 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Main</title>
+    <script src="main.js"></script>
+</head>
+
+<body>
+    <div id="myapp"></div>
+    <script>
+        var app = Elm.Main.init({ flags: { window: { width: window.innerWidth, height: window.innerHeight } } });
+
+        app.ports.ready.subscribe(_ => {
+            // Modified from https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API
+
+            var canvas = document.getElementById('game');
+
+            canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+            document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
+
+            canvas.addEventListener("click", _ => canvas.requestPointerLock());
+
+            document.addEventListener('pointerlockchange', lockChangeAlert, false);
+            document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+            function lockChangeAlert() {
+                app.ports.onPointerLock.send(document.pointerLockElement === canvas || document.mozPointerLockElement === canvas);
+            }
+        });
+
+
+    </script>
+</body>
+
+</html>
