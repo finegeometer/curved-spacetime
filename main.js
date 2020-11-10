@@ -16213,7 +16213,7 @@ var $author$project$Main$viewRightSidebar = function (model) {
 							]),
 						{
 							label: $mdgriffith$elm_ui$Element$text('[src]'),
-							url: ''
+							url: 'https://github.com/finegeometer/curved-spacetime'
 						})),
 				A2(
 					$elm$core$List$cons,
