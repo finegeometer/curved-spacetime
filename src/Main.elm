@@ -546,7 +546,7 @@ viewText height =
 explanation : List (Element msg)
 explanation =
     [ paragraph []
-        [ text "The idea of general relativity is that what we feel as a gravitational force "
+        [ text "A central idea of general relativity is that what we feel as a gravitational force "
         , text "is in fact not a force, but simply a result of the curvature of spacetime. "
         ]
     , paragraph []
@@ -833,11 +833,6 @@ qa =
                 , text "This means that relativistic effects do not show up in this simulation. "
                 , text "So no cosmic speed limit, no precession, no time dilation, et cetera. "
                 , text "In fact, under this approximation, the curved spacetime just reproduces Newtonian gravity! "
-                ]
-            , paragraph []
-                [ text "I thought about trying to properly implement a finite speed of light. "
-                , text "But I know from experience that the resulting simulation "
-                , text "is both harder to create and harder to use. "
                 ]
             ]
       }

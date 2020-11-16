@@ -16329,7 +16329,7 @@ var $author$project$Main$explanation = _List_fromArray(
 		_List_Nil,
 		_List_fromArray(
 			[
-				$mdgriffith$elm_ui$Element$text('The idea of general relativity is that what we feel as a gravitational force '),
+				$mdgriffith$elm_ui$Element$text('A central idea of general relativity is that what we feel as a gravitational force '),
 				$mdgriffith$elm_ui$Element$text('is in fact not a force, but simply a result of the curvature of spacetime. ')
 			])),
 		A2(
@@ -16886,15 +16886,6 @@ var $author$project$Main$qa = _List_fromArray(
 						$mdgriffith$elm_ui$Element$text('This means that relativistic effects do not show up in this simulation. '),
 						$mdgriffith$elm_ui$Element$text('So no cosmic speed limit, no precession, no time dilation, et cetera. '),
 						$mdgriffith$elm_ui$Element$text('In fact, under this approximation, the curved spacetime just reproduces Newtonian gravity! ')
-					])),
-				A2(
-				$mdgriffith$elm_ui$Element$paragraph,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$mdgriffith$elm_ui$Element$text('I thought about trying to properly implement a finite speed of light. '),
-						$mdgriffith$elm_ui$Element$text('But I know from experience that the resulting simulation '),
-						$mdgriffith$elm_ui$Element$text('is both harder to create and harder to use. ')
 					]))
 			]),
 		j: 6,
