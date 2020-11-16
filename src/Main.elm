@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Browser
 import Browser.Dom exposing (Element)
 import Browser.Events exposing (onAnimationFrameDelta, onClick, onKeyDown, onKeyUp, onMouseMove, onResize)
-import Element exposing (Element, alignLeft, alignRight, alignTop, behindContent, centerX, column, el, fill, html, padding, paddingEach, paddingXY, paragraph, px, rgb, row, scrollbarY, shrink, spacing, text)
+import Element exposing (Element, alignLeft, alignRight, alignTop, behindContent, centerX, column, el, fill, html, padding, paddingEach, paddingXY, paragraph, px, rgb, row, scrollbarY, shrink, spacing, text, textColumn)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -46,7 +46,8 @@ type alias Window =
 
 
 type Msg
-    = Frame Float
+    = Reset
+    | Frame Float
     | KeyCode { code : String, down : Bool }
     | MouseMove Int Int
     | PointerLock Bool
@@ -78,7 +79,7 @@ init { window } =
     , keys = Set.empty
     , pointerLock = False
     , window = window
-    , dropdowns = Array.fromList [ True, False, True, False ]
+    , dropdowns = Array.fromList <| True :: False :: False :: True :: List.repeat 10 False
     , sidebars = { left = True, right = True }
     , resolution = 0.5
     , edgeWidth = 0.1
@@ -88,6 +89,9 @@ init { window } =
 update : Msg -> Model -> Model
 update msg model =
     case msg of
+        Reset ->
+            { model | player = Math.defaultPlayer }
+
         Frame dt ->
             let
                 ifKey : String -> Float -> Float
@@ -131,7 +135,7 @@ update msg model =
             }
 
         WindowResize width height ->
-            { model | window = { width = width, height = height } }
+            { model | window = { width = width - 1, height = height - 1 } }
 
         Dropdown which status ->
             { model | dropdowns = Array.set which status model.dropdowns }
@@ -262,33 +266,46 @@ viewReminder =
 
 
 viewLeftSidebar : Model -> Element Msg
-viewLeftSidebar { player, dropdowns, sidebars, window } =
+viewLeftSidebar model =
     let
-        width =
-            window.width // 9
-
         ( symbol, content ) =
-            if sidebars.left then
+            if model.sidebars.left then
                 ( "◂"
                 , column
-                    [ Element.width shrink
+                    [ Element.width <| px <| model.window.width // 9 + 20
+                    , Element.height (shrink |> Element.maximum model.window.height)
                     , Background.color borderColor
                     , padding 5
                     , spacing 5
+                    , scrollbarY
                     ]
                   <|
-                    List.map2 (dropdown { width = width })
-                        [ { title = "Orbit"
-                          , msg = Dropdown 0
-                          , content = el [] <| viewOrbit (width - 10) player
-                          }
-                        , { title = "Stats"
-                          , msg = Dropdown 1
-                          , content = viewStats player
-                          }
+                    Input.button
+                        [ Background.color (rgb 0.2 0 0.2)
+                        , Element.mouseOver [ Border.innerGlow (rgb 0.1 0.3 0.1) 5 ]
+                        , Element.mouseDown [ Background.color <| rgb 0.1 0.3 0.1 ]
+                        , Element.width fill
+                        , Font.center
                         ]
-                    <|
-                        Array.toList dropdowns
+                        { onPress = Just Reset
+                        , label =
+                            paragraph [] [ text "Click to Reset" ]
+                        }
+                        :: List.map2 (dropdown { fontScale = 3 })
+                            [ { title = "Orbit"
+                              , msg = Dropdown 0
+                              , content = el [] <| viewOrbit (model.window.width // 9) model.player
+                              }
+                            , { title = "Stats"
+                              , msg = Dropdown 1
+                              , content = viewStats model.player
+                              }
+                            , { title = "Settings"
+                              , msg = Dropdown 2
+                              , content = viewSettings model
+                              }
+                            ]
+                            (Array.toList model.dropdowns)
                 )
 
             else
@@ -305,7 +322,7 @@ viewLeftSidebar { player, dropdowns, sidebars, window } =
             , Border.widthEach { bottom = 5, top = 5, right = 5, left = 0 }
             , paddingXY 5 2
             , Element.pointer
-            , Events.onClick (LeftSidebar (not sidebars.left))
+            , Events.onClick (LeftSidebar (not model.sidebars.left))
             ]
             (text symbol)
         ]
@@ -314,43 +331,50 @@ viewLeftSidebar { player, dropdowns, sidebars, window } =
 viewRightSidebar : Model -> Element Msg
 viewRightSidebar model =
     let
-        width =
-            2 * model.window.width // 9
-
         ( symbol, content ) =
             if model.sidebars.right then
                 ( "▸"
                 , column
-                    [ Element.width shrink
+                    [ Element.width <| px <| 2 * model.window.width // 9
                     , Background.color borderColor
                     , padding 5
                     , spacing 5
+                    , Element.height (shrink |> Element.maximum model.window.height)
+                    , scrollbarY
                     ]
                   <|
                     el [ Background.color backgroundColor, Element.width fill ]
-                        (Element.link [ centerX, padding 5 ] { url = "https://github.com/finegeometer/curved-spacetime", label = text "[src]" })
-                        :: Element.textColumn
+                        (Element.link [ centerX, padding 5 ]
+                            { url = "https://github.com/finegeometer/curved-spacetime"
+                            , label = text "[source code]"
+                            }
+                        )
+                        :: textColumn
                             [ Background.color backgroundColor
                             , Font.size (scaled -1)
                             , padding 5
                             , Font.center
                             , Font.italic
-                            , Element.width (px width)
+                            , Element.width fill
                             ]
                             [ Element.paragraph [] [ text "Meant for use on a computer. " ]
                             , Element.paragraph [] [ text "Does not support Internet Explorer." ]
                             ]
-                        :: List.map2 (dropdown { width = width })
+                        :: List.map2 (dropdown { fontScale = 3 })
                             [ { title = "Explanation"
-                              , msg = Dropdown 2
-                              , content = viewExplanation (model.window.height // 2)
-                              }
-                            , { title = "Settings"
                               , msg = Dropdown 3
-                              , content = viewSettings model
+                              , content = viewText (model.window.height // 2) explanation
+                              }
+                            , { title = "Things to Try or Notice"
+                              , msg = Dropdown 4
+                              , content = viewText (model.window.height // 2) thingsToTry
+                              }
+                            , { title = "Q & A"
+                              , msg = Dropdown 5
+                              , content = viewQA model
                               }
                             ]
-                            (List.drop 2 <| Array.toList model.dropdowns)
+                            (List.drop 3 <| Array.toList model.dropdowns)
                 )
 
             else
@@ -395,69 +419,128 @@ viewStats player =
         stats =
             Math.stats player
     in
-    Element.textColumn
+    textColumn
         [ Font.center
         , Element.width fill
         , padding 5
         , spacing 5
         ]
-        [ el
+        [ paragraph
             [ Font.bold
             , Font.underline
             , Font.size (scaled 2)
             , Font.color (rgb 0.6 0.3 0.6)
             , paddingEach { top = 10, left = 0, right = 0, bottom = 0 }
             ]
-            (text "Orbital")
-        , el [ Font.bold ] <| text "Energy"
+            [ text "Orbital" ]
+        , paragraph [ Font.bold ] [ text "Energy" ]
         , text <| String.left 7 <| String.fromFloat stats.energy
-        , el [ Font.bold ] <| text "Angular Momentum"
+        , paragraph [ Font.bold ] [ text "Angular Momentum" ]
         , text <| String.left 7 <| String.fromFloat stats.angularMomentum
-        , el [ Font.bold ] <| text "Eccentricity"
+        , paragraph [ Font.bold ] [ text "Eccentricity" ]
         , text <| String.left 7 <| String.fromFloat stats.eccentricity
-        , el [ Font.bold ] <| text "Periapsis"
+        , paragraph [ Font.bold ] [ text "Periapsis" ]
         , text <| String.left 7 <| String.fromFloat stats.periapsis
-        , el [ Font.bold ] <| text "Apoapsis"
-        , text <| String.left 7 <| String.fromFloat stats.apoapsis
-        , el
+        , paragraph [ Font.bold ] [ text "Apoapsis" ]
+        , text <|
+            if stats.apoapsis > 0 then
+                String.left 7 <| String.fromFloat stats.apoapsis
+
+            else
+                " "
+        , paragraph
             [ Font.bold
             , Font.underline
             , Font.size (scaled 2)
             , Font.color (rgb 0.6 0.3 0.6)
             , paddingEach { top = 15, left = 0, right = 0, bottom = 0 }
             ]
-            (text "Other")
-        , el [ Font.bold ] <| text "Position"
+            [ text "Other" ]
+        , paragraph [ Font.bold ] [ text "Position" ]
         , text <|
             String.concat
                 [ String.left 7 <| String.fromFloat <| Math.Vector2.getX stats.position
                 , ", "
                 , String.left 7 <| String.fromFloat <| Math.Vector2.getY stats.position
                 ]
-        , el [ Font.bold ] <| text "Velocity"
+        , paragraph [ Font.bold ] [ text "Velocity" ]
         , text <|
             String.concat
                 [ String.left 7 <| String.fromFloat <| Math.Vector2.getX stats.velocity
                 , ", "
                 , String.left 7 <| String.fromFloat <| Math.Vector2.getY stats.velocity
                 ]
-        , el [ Font.bold ] <| text "Time"
+        , paragraph [ Font.bold ] [ text "Time" ]
         , text <| String.left 7 <| String.fromFloat stats.time
         ]
 
 
-viewExplanation : Int -> Element msg
-viewExplanation height =
-    Element.textColumn
+viewSettings : Model -> Element Msg
+viewSettings { resolution, edgeWidth } =
+    column
+        [ Element.width fill
+        , padding 5
+        , spacing 5
+        ]
+        [ Input.slider
+            [ Element.width fill
+            , Element.height (px 5)
+            , Background.color borderColor
+            ]
+            { onChange = Resolution
+            , label =
+                Input.labelAbove [ centerX ] <|
+                    textColumn [ Font.center, padding 5, spacing 5, Element.width shrink ]
+                        [ paragraph [ Font.bold ]
+                            [ text <|
+                                String.concat
+                                    [ "resolution ("
+                                    , String.fromInt <| round <| 100 * resolution
+                                    , "%)"
+                                    ]
+                            ]
+                        , paragraph [ Font.size (scaled -1) ] [ text "Performance Option" ]
+                        ]
+            , min = 0
+            , max = 1
+            , value = resolution
+            , thumb = Input.defaultThumb
+            , step = Just 0.01
+            }
+        , Input.slider
+            [ Element.width fill
+            , Element.height (px 5)
+            , Background.color borderColor
+            ]
+            { onChange = EdgeWidth
+            , label =
+                Input.labelAbove [ centerX ] <|
+                    paragraph [ Font.bold, Font.center ]
+                        [ text <|
+                            String.concat
+                                [ "Lattice edge width ("
+                                , String.fromFloat edgeWidth
+                                , ")"
+                                ]
+                        ]
+            , min = 0.01
+            , max = 0.2
+            , value = edgeWidth
+            , thumb = Input.defaultThumb
+            , step = Just 0.001
+            }
+        ]
+
+
+viewText : Int -> List (Element msg) -> Element msg
+viewText height =
+    textColumn
         [ Element.height (px height)
         , Element.width fill
-        , Element.clipY
         , scrollbarY
         , padding 5
         , spacing 15
-        , Font.center
         ]
-        explanation
 
 
 explanation : List (Element msg)
@@ -477,7 +560,7 @@ explanation =
     , paragraph []
         [ text "In this project, I attempt to show the curved spacetime around a planet. "
         , text "To simplify the picture, I'm only showing two spacial dimensions. "
-        , text "Including the time dimension, that makes three. "
+        , text "If you include the time dimension, that makes three. "
         ]
     , paragraph []
         [ text "The spacial dimensions are shown as left/right and up/down. Time is shown as forward/backward. "
@@ -485,126 +568,284 @@ explanation =
     , paragraph []
         [ text "I've filled the spacetime with grid-lines, to show the x, y, and t coordinates. "
         , text "The planet, at x=y=0, is shown in red. "
-        , text "Far from the planet, the grid mostly looks like an ordinary cubic lattice. "
+        , text "It looks like a bar, because while it is small in the x and y directions, it extends forever in the time direction. "
+        ]
+    , paragraph []
+        [ text "Far from the planet, the grid mostly looks like an ordinary cubic lattice. "
         , text "But near the planet, spacetime is strongly curved, so everything looks distorted. "
         ]
     , paragraph []
         [ text "Now click on the scene. "
         , text "This will \"lock\" the mouse pointer, and allow you to look around by moving the mouse. "
-        , text "You can use the escape key to unlock the mouse pointer again. "
+        , text "Clicking again, or pressing Escape, will unlock the mouse pointer again. "
         ]
     , paragraph []
         [ text "When the pointer is locked, you can also move around the spacetime. "
         , text "The W and S keys will move you forward and backward. (Recall that this is the time direction.) "
-        , text "A and D will move you left and right, and Space and (Left) Shift will move you up and down. "
+        , text "A and D will move you left and right, and the Spacebar and the left Shift key will move you up and down. "
         , text "(If you've played Minecraft, these controls should be familiar.) "
         ]
     , paragraph []
-        [ text "Now, Freely falling objects follow straight paths through spacetime. "
-        , text "So as you walk forward, you are following a path that a falling object might take! "
-        , text "Under the \"Orbit\" panel, on the left, you can see the path in "
+        [ text "If you get lost while looking around the spacetime, "
+        , text "click the \"Click to Reset\" button on the upper left. "
+        ]
+    , paragraph []
+        [ text "Now look at the \"Orbit\" panel on the left. "
+        , text "This shows what is going on in "
         , el [ Font.italic ] <| text "space, "
-        , text "without the time coordinate. "
+        , text "rather than "
+        , el [ Font.italic ] <| text "spacetime. "
+        , text "The red dot is the planet. The green dot is your location."
         ]
     , paragraph []
-        [ text "Some paths are "
-        , el [ Font.italic ] <| text "orbits, "
-        , text "looping around the planet forever. "
-        , text "But for other paths, the object has too much speed, and escapes the planet's gravity entirely! "
-        , text "I demonstrate this using color; if you are looking at a green region, you are following an orbit. "
-        , text "If you are looking at a cyan region, you are following an escape trajectory. "
-        , text "Try watching what happens to the path on the orbit panel as you look around the scene. "
+        [ text "The blue curve corresponds to the straight line in spacetime "
+        , text "that extends directly in front of and behind you. "
+        , text "To see this, walk forward in the spacetime, and observe that the green dot follows the blue path. "
+        , text "But due to the curvature of spacetime, this straight path in "
+        , el [ Font.italic ] <| text "spacetime "
+        , text "looks like a curved path in "
+        , el [ Font.italic ] <| text "space. "
+        , text "Specifically, it appears to bend toward the planet. "
         ]
     , paragraph []
-        [ text "I hope this project gives you a better sense of what \"curved spacetime\" is actually like." ]
-    , paragraph []
-        [ text "Have fun!" ]
-    , el
-        [ Font.bold
-        , Font.underline
-        , Font.size (scaled 2)
-        , Font.color (rgb 0.6 0.3 0.6)
-        , paddingEach { top = 15, left = 0, right = 0, bottom = 0 }
+        [ text "Freely falling objects follow straight paths through spacetime. "
+        , text "But as we just saw, a straight path in "
+        , el [ Font.italic ] <| text "spacetime "
+        , text "appears to bend toward the planet when viewed only in "
+        , el [ Font.italic ] <| text "space. "
+        , text "So the object appears to fall toward the planet. "
         ]
-        (text "Something to notice")
+    , paragraph []
+        [ text "And that is how gravity arises from the curvature of spacetime. " ]
+    , el [ Element.height (px 5) ] Element.none
+    ]
+
+
+thingsToTry : List (Element Msg)
+thingsToTry =
+    [ el [ Element.width fill, Element.height (px 2), Background.color borderColor ] Element.none
+    , paragraph []
+        [ text "Watch what happens to the blue curve on the orbit panel "
+        , text "as you look between the green and teal regions on the main screen. "
+        ]
+    , el [ Element.width fill, Element.height (px 2), Background.color borderColor ] Element.none
     , paragraph []
         [ text "Look carefully at the timeward-pointing edges of the lattice. "
         , text "They all bend away from the planet! "
         , text "This corresponds to the fact that if you want to hover in place above a planet, "
-        , text "you need to continually accelerate upward. "
+        , text "you need to continually accelerate away from it. "
         ]
-    , el
-        [ Font.bold
-        , Font.underline
-        , Font.size (scaled 2)
-        , Font.color (rgb 0.6 0.3 0.6)
-        , paddingEach { top = 15, left = 0, right = 0, bottom = 0 }
-        ]
-        (text "Amusing note")
     , paragraph []
-        [ text "The visible dividing line between the green and cyan regions is actually a bug in my code. "
-        , text "But it looks cool enough that I don't want to fix it! "
+        [ text "Every point on the surface of a planet is constantly accelerating outward. "
+        , text "And yet, the planet isn't getting bigger! "
+        , text "This is only possible because of the curvature of spacetime. "
+        , text "You could describe this as space shrinking inside the planet. "
+        ]
+    , el [ Element.width fill, Element.height (px 2), Background.color borderColor ] Element.none
+    , paragraph []
+        [ text "If you look around enough, you may notice that rotation acts a bit weirdly. "
+        , text "In particular, it's impossible to turn all the way around. "
+        , text "This isn't just a weird quirk of my simulation; "
+        , text "spacetime rotations are actually fundamentally different from space rotations. "
+        ]
+    , paragraph []
+        [ text "If spacetime rotations acted \"normally\", time travel would be easy (in theory). "
+        , text "You'd just have to accelerate until you made a U-turn in spacetime! "
+        ]
+    , paragraph []
+        [ text "But with spacetime's actual geometry, it's impossible to make a U-turn. "
+        , text "So that doesn't work. "
+        ]
+    , el [ Element.width fill, Element.height (px 2) ] Element.none
+    , paragraph []
+        [ text "Interestingly, if you assume spacetime rotations act \"normally\", "
+        , text "you get the exact "
+        , el [ Font.italic ] <| text "opposite "
+        , text "of special relativity. Here's an example: "
+        ]
+    , paragraph []
+        [ text "Imagine two people. "
+        , text "One stays near Earth. The other flies to a nearby star and back. "
+        , text "If you draw their paths in spacetime, you get a triangle. "
+        , text "The first person's path forms the base of the triangle, "
+        , text "and the second person's path forms the other two sides."
+        , text "Clearly, the second person's path is longer. So they experience more time. "
+        ]
+    , paragraph []
+        [ text "But in actual relativity, rotation doesn't act normally. "
+        , text "In fact, it acts even more weirdly than in this simulation. "
+        , text "This turns out to reverse most relativistic effects. "
+        , text "So in actual relativity, the second person experiences "
+        , el [ Font.italic ] <| text "less "
+        , text "time than the first, not more. This is time dilation. "
         ]
     ]
 
 
-viewSettings : Model -> Element Msg
-viewSettings { resolution, edgeWidth } =
+viewQA : Model -> Element Msg
+viewQA model =
     column
         [ Element.width fill
+        , Background.color borderColor
         , padding 5
         , spacing 5
+        , centerX
         ]
-        [ Input.slider
-            [ Element.width fill
-            , Element.height (px 5)
-            , Background.color borderColor
-            ]
-            { onChange = Resolution
-            , label =
-                Input.labelAbove [ centerX ] <|
-                    Element.textColumn [ Font.center, padding 5, spacing 5, Element.width shrink ]
-                        [ el [ Font.bold ] <|
-                            text <|
-                                String.concat
-                                    [ "resolution ("
-                                    , String.fromInt <| round <| 100 * resolution
-                                    , "%)"
-                                    ]
-                        , el [ Font.size (scaled -1) ] <| text "Performance Option"
-                        ]
-            , min = 0
-            , max = 1
-            , value = resolution
-            , thumb = Input.defaultThumb
-            , step = Just 0.01
-            }
-        , Input.slider
-            [ Element.width fill
-            , Element.height (px 5)
-            , Background.color borderColor
-            ]
-            { onChange = EdgeWidth
-            , label =
-                Input.labelAbove [ centerX ] <|
-                    el [ Font.bold ] <|
-                        text <|
-                            String.concat
-                                [ "Lattice edge width ("
-                                , String.fromFloat edgeWidth
-                                , ")"
-                                ]
-            , min = 0.01
-            , max = 0.2
-            , value = edgeWidth
-            , thumb = Input.defaultThumb
-            , step = Just 0.001
-            }
-        ]
+    <|
+        List.map2
+            (\info ->
+                dropdown { fontScale = 2 }
+                    { title = info.title
+                    , msg = Dropdown (info.msg + 6)
+                    , content =
+                        textColumn
+                            [ Element.width fill
+                            , padding 5
+                            , spacing 15
+                            ]
+                            info.content
+                    }
+            )
+            qa
+            (List.drop 6 <| Array.toList model.dropdowns)
 
 
-dropdown : { width : Int } -> { title : String, content : Element msg, msg : Bool -> msg } -> Bool -> Element msg
-dropdown { width } { title, content, msg } open =
+qa : List { title : String, msg : Int, content : List (Element msg) }
+qa =
+    [ { title = "What am I seeing?"
+      , msg = 0
+      , content =
+            [ paragraph []
+                [ text "This is a view of the spacetime around a planet. "
+                , text "You can see two dimensions of space, and one dimension of time. "
+                , text "The spacial dimensions are represented by up/down and left/right, "
+                , text "and the time direction by forward/backward. "
+                ]
+            , paragraph []
+                [ text "The black grid is effectively graph paper; "
+                , text "it shows the x, y, and t coordinate planes. "
+                , text "The red line is the planet, at x = y = 0. "
+                ]
+            ]
+      }
+    , { title = "What are the controls?"
+      , msg = 1
+      , content =
+            [ paragraph []
+                [ text "Click the screen to lock or unlock the mouse pointer. "
+                , text "While the pointer is locked, you can move the mouse to look around, "
+                , text "and use the W, A, S, D, Space, and LeftShift keys to move around. "
+                , text "If the pointer is not locked, movement is disabled. "
+                ]
+            ]
+      }
+    , { title = "What is the orbit panel?"
+      , msg = 2
+      , content =
+            [ paragraph []
+                [ text "While the main screen shows "
+                , el [ Font.italic ] <| text "spacetime, "
+                , text "the orbit panel just shows "
+                , el [ Font.italic ] <| text "space. "
+                , text "The red dot is the planet, at x = y = 0. "
+                , text "The green dot is your location. "
+                ]
+            , paragraph []
+                [ text "The blue curve corresponds to the straight line in spacetime "
+                , text "that extends straight in front of and behind you. "
+                , text "Due to the curvature of spacetime, the path looks curved when plotted only in space."
+                ]
+            , paragraph []
+                [ text "Since freely falling objects follow straight paths through spacetime, "
+                , text "the blue curve can also be seen as a possible trajectory for a falling object. "
+                ]
+            ]
+      }
+    , { title = "What is an orbit, anyway?"
+      , msg = 3
+      , content =
+            [ paragraph []
+                [ text "There are three ways a falling object can behave. "
+                , text "If it is moving too slowly, it will hit the planet. "
+                , text "This is called a "
+                , el [ Font.italic ] <| text "suborbital trajectory. "
+                , text "(My simulation does not implement collision.) "
+                ]
+            , paragraph []
+                [ text "If the object is moving faster, it will loop around the planet forever. "
+                , text "This is called an "
+                , el [ Font.italic ] <| text "orbit. "
+                ]
+            , paragraph []
+                [ text "Finally, if the object has enough speed, it will escape the planet's gravity, "
+                , text "and continue flying away forever. "
+                , text "This is called an "
+                , el [ Font.italic ] <| text "escape trajectory. "
+                ]
+            , paragraph []
+                [ text "Near Earth's surface, if you want to orbit, you must travel faster than 8 kilometers per second. "
+                , text "If you reach 11 kilometers per second, you will be on an escape trajectory. "
+                ]
+            ]
+      }
+    , { title = "On the main screen, what are the colors?"
+      , msg = 4
+      , content =
+            [ paragraph []
+                [ text "Consider the straight line in spacetime "
+                , text "that extends straight in front of and behind you. "
+                , text "As I just explained, this can be viewed as the trajectory of a hypothetical object. "
+                ]
+            , paragraph []
+                [ text "If you are looking at a green region, this path is an orbit. "
+                , text "If you are looking at a teal region, this path is an escape trajectory. "
+                , text "To see this, try watching what happens to the path on the orbit panel "
+                , text "as you look between the green and teal regions. "
+                ]
+            ]
+      }
+    , { title = "What is the stats panel?"
+      , msg = 5
+      , content =
+            [ paragraph []
+                [ text "The stats panel contains a collection of information about the aforementioned trajectory. "
+                , text "It also tells you the position and velocity at your specific location in spacetime. "
+                ]
+            , paragraph [] [ text "To explain a few of the terms:" ]
+            , paragraph []
+                [ text "Eccentricity is a measure of how elliptical an orbit is. "
+                , text "Circular orbits have zero eccentricity. "
+                , text "As the eccentricity gets closer to one, the ellipse gets flatter. "
+                , text "Escape trajectories have eccentricity greater than one."
+                ]
+            , paragraph []
+                [ text "Periapsis is the lowest point in the orbit, "
+                , text "and apoapsis is the highest. "
+                , text "The terms can also refer to the distances from the planet at those points in the orbit. "
+                ]
+            ]
+      }
+    , { title = "Where is the speed of light in this simulation?"
+      , msg = 6
+      , content =
+            [ paragraph []
+                [ text "In this project, I use the approximation that the speed of light is infinite. "
+                , text "This means that relativistic effects do not show up in this simulation. "
+                , text "So no cosmic speed limit, no precession, no time dilation, et cetera. "
+                , text "In fact, under this approximation, the curved spacetime just reproduces Newtonian gravity! "
+                ]
+            , paragraph []
+                [ text "I thought about trying to properly implement a finite speed of light. "
+                , text "But I know from experience that the resulting simulation "
+                , text "is both harder to create and harder to use. "
+                ]
+            ]
+      }
+    ]
+
+
+dropdown : { fontScale : Int } -> { title : String, content : Element msg, msg : Bool -> msg } -> Bool -> Element msg
+dropdown { fontScale } { title, content, msg } open =
     let
         ( symbol, optContent ) =
             if open then
@@ -615,18 +856,20 @@ dropdown { width } { title, content, msg } open =
     in
     column
         [ Background.color backgroundColor
-        , Element.width (px width)
+        , Element.width fill
         , padding 5
         , spacing 5
         ]
-        [ el
+        [ row
             [ Font.bold
-            , Font.size (scaled 3)
+            , Font.size (scaled fontScale)
             , Events.onClick (msg (not open))
             , Element.pointer
-            , centerX
+            , Element.width fill
             ]
-            (text <| String.append symbol title)
+            [ el [ alignTop ] (text symbol)
+            , paragraph [] [ text title ]
+            ]
         , optContent
         ]
 

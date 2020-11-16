@@ -143,7 +143,7 @@ defaultPlayer : Player
 defaultPlayer =
     Direct
         { position = vec2 2.5 0.3
-        , velocity = vec2 0 0.001
+        , velocity = vec2 0 0.65
         , time = 0.5
         }
 
@@ -401,7 +401,7 @@ renderShader =
     float r = length(position);
 
     bool crosshair() {
-        return dot(xy, xy) < 0.0001;
+        return dot(xy, xy) < 0.0002;
     }
 
     vec2 walls(float x) {
@@ -412,7 +412,7 @@ renderShader =
 
     void main() {
         if (crosshair()) {
-            gl_FragColor = vec4(1., 0., 0., 1.);
+            gl_FragColor = vec4(1., 1., 1., 1.);
             return;
         }
 
@@ -497,7 +497,7 @@ renderShader =
 
         float distance = marcher_position.z - player_three_position.z;
         vec3 surfaceColor = 2. * dot(marcher_position.xy, marcher_position.xy) < (edgeWidth * edgeWidth)
-            ? vec3(0.3, 0., 0.) 
+            ? vec3(0.5, 0., 0.) 
             : vec3(0., 0., 0.);
         vec3 fogColor = vec3(0., 1., bound ? 0. : 1.);
         gl_FragColor = vec4(mix(surfaceColor, fogColor, distance * 0.1), 1.);
