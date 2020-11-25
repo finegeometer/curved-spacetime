@@ -12,7 +12,7 @@
         var app = Elm.Main.init({ flags: { window: { width: window.innerWidth - 1, height: window.innerHeight - 1 } } });
 
         app.ports.ready.subscribe(_ => {
-            // Modified from https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API 
+            // Modified from https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API
 
             var canvas = document.getElementById('game');
 

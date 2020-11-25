@@ -237,6 +237,7 @@ type alias Stats =
     , position : Vec2
     , velocity : Vec2
     , time : Float
+    , orbital_period : Float
     }
 
 
@@ -248,6 +249,9 @@ stats p =
 
         r =
             Vec2.length position
+
+        energy =
+            0.5 * Vec2.lengthSquared velocity - 1 / r
 
         h =
             Vec2.getX position * Vec2.getY velocity - Vec2.getY position * Vec2.getX velocity
@@ -268,7 +272,7 @@ stats p =
         e =
             Vec2.length eccentricity
     in
-    { energy = 0.5 * Vec2.lengthSquared velocity - 1 / r
+    { energy = energy
     , angularMomentum = h
     , eccentricity = e
     , periapsis = a * (1 - e)
@@ -276,6 +280,7 @@ stats p =
     , position = position
     , velocity = velocity
     , time = time
+    , orbital_period = 2 * pi * (-2 * energy) ^ -1.5
     }
 
 

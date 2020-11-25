@@ -82,7 +82,7 @@ init { window } =
     , dropdowns = Array.fromList <| True :: False :: False :: True :: List.repeat 10 False
     , sidebars = { left = True, right = True }
     , resolution = 0.5
-    , edgeWidth = 0.1
+    , edgeWidth = 0.058
     }
 
 
@@ -445,6 +445,13 @@ viewStats player =
         , text <|
             if stats.apoapsis > 0 then
                 String.left 7 <| String.fromFloat stats.apoapsis
+
+            else
+                " "
+        , paragraph [ Font.bold ] [ text "Orbital Period" ]
+        , text <|
+            if stats.energy < 0 then
+                String.left 7 <| String.fromFloat stats.orbital_period
 
             else
                 " "
